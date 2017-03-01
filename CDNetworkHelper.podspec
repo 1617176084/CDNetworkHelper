@@ -125,6 +125,7 @@ Pod::Spec.new do |s|
   # s.libraries = "iconv", "xml2"
   #s.frameworks = 'CoreLocation','CoreTelephony','AVFoundation','AddressBook','AudioToolbox','SystemConfiguration','QuartzCore','CoreGraphics'
   #s.libraries = 'z','c++'
+  s.framework    = "UIKit"
 
   # ――― Project Settings ――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
   #
@@ -138,4 +139,4 @@ Pod::Spec.new do |s|
   # s.dependency "JSONKit", "~> 1.4"
   s.dependency "AFNetworking"
   s.dependency "YYCache"
-end
+end  
