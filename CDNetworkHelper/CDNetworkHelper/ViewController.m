@@ -6,8 +6,8 @@
 //  Copyright © 2017年 Apple. All rights reserved.
 //
 
-#import "ViewController.h"
 #import "CDNetworkHelper.h"
+#import "ViewController.h"
 
 @interface ViewController ()
 
@@ -16,16 +16,14 @@
 @implementation ViewController
 
 - (void)viewDidLoad {
-    [super viewDidLoad];
-    // Do any additional setup after loading the view, typically from a nib.
-    [CDNetworkHelper POST:@"" parameters:NULL success:NULL failure:NULL];
+  [super viewDidLoad];
+  // Do any additional setup after loading the view, typically from a nib.
+  [CDNetworkHelper POST:@"" parameters:NULL success:NULL failure:NULL];
 }
-
 
 - (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
+  [super didReceiveMemoryWarning];
+  // Dispose of any resources that can be recreated.
 }
-
 
 @end
