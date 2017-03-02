@@ -2,7 +2,7 @@
 Pod::Spec.new do |s|
 
   s.name         = "CDNetworkHelper"
-  s.version      = "1.0.4"
+  s.version      = "1.0.5"
   s.summary      = "AFNetworking 3.x 与YYCache封装,一句代码搞定数据请求与缓存,告别FMDB!控制台直接打印json中文字符,调试更方便"
 
   s.homepage     = "https://github.com/1617176084/CDNetworkHelper.git"
