@@ -75,8 +75,14 @@ typedef NS_ENUM(NSUInteger, CDResponseSerializer) {
 /** 请求成功的Block */
 typedef void(^CDHttpRequestSuccess)(id responseObject);
 
+/** 所有请求成功的Block */
+typedef void(^CDHttpRequestSuccessAll)(id responseObject);
+
 /** 请求失败的Block */
 typedef void(^CDHttpRequestFailed)(NSError *error);
+
+/** 请求失败的Block */
+typedef void(^CDHttpRequestFailedAll)(NSError *error);
 
 /** 缓存的Block */
 typedef void(^CDHttpRequestCache)(id responseCache);
@@ -131,6 +137,25 @@ typedef void(^CDNetworkStatus)(CDNetworkStatusType status);
  */
 + (void)closeLog;
 
+/**
+ 开启URL请求时的UTF_8编码规则处理
+ */
++ (void)openUriUTF_8Format;
+
+/**
+ 关闭URL请求时的UTF_8编码规则处理
+ */
++ (void)closeLogUriUTF_8Format;
+
+
+/**
+ 关注所有请求成功的回调
+ */
++ (void)requestAllSuccess:(CDHttpRequestSuccessAll)success;
+/**
+ 关注所有请求失败的回调
+ */
++ (void)requestAllFailure:(CDHttpRequestFailedAll)success;
 
 /**
  *  GET请求,无缓存

@@ -22,14 +22,19 @@
 @implementation CDNetworkHelper
 
 static BOOL _isOpenLog;   // 是否已开启日志打印
+static BOOL _isOpenUriUTF_8;   // 是否已开启网络地址URL-8 编码 默认开启
 static NSMutableArray *_allSessionTask;
 static AFHTTPSessionManager *_sessionManager;
+static CDNetworkHelper* _defautNetworkHelper = NULL;
+
+static CDHttpRequestSuccessAll _successAll;
+static CDHttpRequestFailedAll _failedAll;
 
 #pragma mark - 开始监听网络
 + (void)networkStatusWithBlock:(CDNetworkStatus)networkStatus {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-
+     
         [[AFNetworkReachabilityManager sharedManager] setReachabilityStatusChangeBlock:^(AFNetworkReachabilityStatus status) {
             switch (status) {
                 case AFNetworkReachabilityStatusUnknown:
@@ -52,7 +57,26 @@ static AFHTTPSessionManager *_sessionManager;
         }];
     });
 }
-
+/**
+ 关注所有请求成功的回调
+ */
++ (void)requestAllSuccess:(CDHttpRequestSuccessAll)success{
+    if (!_successAll) {
+        _successAll = success;
+    }else{
+        NSLog(@"请不要重复设定 关注回调,本次设定无效");
+    }
+}
+/**
+ 关注所有请求失败的回调
+ */
++ (void)requestAllFailure:(CDHttpRequestFailedAll)failure{
+    if (!_failedAll) {
+        _failedAll = failure;
+    }else{
+        NSLog(@"请不要重复设定 关注回调,本次设定无效");
+    }
+}
 + (BOOL)isNetwork {
     return [AFNetworkReachabilityManager sharedManager].reachable;
 }
@@ -72,6 +96,19 @@ static AFHTTPSessionManager *_sessionManager;
 + (void)closeLog {
     _isOpenLog = NO;
 }
+/**
+ 开启URL请求时的UTF_8编码规则处理
+ */
++ (void)openUriUTF_8Format{
+    _isOpenUriUTF_8 = true;
+}
+
+/**
+ 关闭URL请求时的UTF_8编码规则处理
+ */
++ (void)closeLogUriUTF_8Format{
+   _isOpenUriUTF_8 = false;
+}
 
 + (void)cancelAllRequest {
     // 锁操作
@@ -85,6 +122,7 @@ static AFHTTPSessionManager *_sessionManager;
 
 + (void)cancelRequestWithURL:(NSString *)URL {
     if (!URL) { return; }
+    URL = [self formatUTF_8Uri:URL];
     @synchronized (self) {
         [[self allSessionTask] enumerateObjectsUsingBlock:^(NSURLSessionTask  *_Nonnull task, NSUInteger idx, BOOL * _Nonnull stop) {
             if ([task.currentRequest.URL.absoluteString hasPrefix:URL]) {
@@ -122,6 +160,7 @@ static AFHTTPSessionManager *_sessionManager;
             responseCache:(CDHttpRequestCache)responseCache
                   success:(CDHttpRequestSuccess)success
                   failure:(CDHttpRequestFailed)failure {
+    URL = [self formatUTF_8Uri:URL];
     //读取缓存
     responseCache ? responseCache([CDNetworkCache httpCacheForURL:URL parameters:parameters]) : nil;
     
@@ -132,6 +171,7 @@ static AFHTTPSessionManager *_sessionManager;
         [[self allSessionTask] removeObject:task];
         
         success ? success(responseObject) : nil;
+        _successAll?_successAll(responseObject) : nil;
         //对数据进行异步缓存
         responseCache ? [CDNetworkCache setHttpCache:responseObject URL:URL parameters:parameters] : nil;
         
@@ -139,6 +179,7 @@ static AFHTTPSessionManager *_sessionManager;
         CDLog(@"%@",_isOpenLog ? NSStringFormat(@"error = %@",error) : @"CDNetworkHelper已关闭日志打印");
         [[self allSessionTask] removeObject:task];
         failure ? failure(error) : nil;
+        _failedAll?_failedAll(error) : nil;
         
     }];
     // 添加sessionTask到数组
@@ -155,6 +196,7 @@ static AFHTTPSessionManager *_sessionManager;
              responseCache:(CDHttpRequestCache)responseCache
                    success:(CDHttpRequestSuccess)success
                    failure:(CDHttpRequestFailed)failure {
+     URL = [self formatUTF_8Uri:URL];
     //读取缓存
     responseCache ? responseCache([CDNetworkCache httpCacheForURL:URL parameters:parameters]) : nil;
     
@@ -165,6 +207,7 @@ static AFHTTPSessionManager *_sessionManager;
         
         [[self allSessionTask] removeObject:task];
         success ? success(responseObject) : nil;
+        _successAll?_successAll(responseObject) : nil;
         //对数据进行异步缓存
         responseCache ? [CDNetworkCache setHttpCache:responseObject URL:URL parameters:parameters] : nil;
     } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
@@ -172,6 +215,7 @@ static AFHTTPSessionManager *_sessionManager;
         
         [[self allSessionTask] removeObject:task];
         failure ? failure(error) : nil;
+        _failedAll?_failedAll(error) : nil;
         
     }];
     
@@ -188,7 +232,7 @@ static AFHTTPSessionManager *_sessionManager;
                                progress:(CDHttpProgress)progress
                                 success:(CDHttpRequestSuccess)success
                                 failure:(CDHttpRequestFailed)failure {
-    
+    URL = [self formatUTF_8Uri:URL];
     NSURLSessionTask *sessionTask = [_sessionManager POST:URL parameters:parameters constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
         NSError *error = nil;
         [formData appendPartWithFileURL:[NSURL URLWithString:filePath] name:name error:&error];
@@ -203,12 +247,14 @@ static AFHTTPSessionManager *_sessionManager;
         
         [[self allSessionTask] removeObject:task];
         success ? success(responseObject) : nil;
+        _successAll?_successAll(responseObject) : nil;
         
     } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
         CDLog(@"%@",_isOpenLog ? NSStringFormat(@"error = %@",error) : @"CDNetworkHelper已关闭日志打印");
         
         [[self allSessionTask] removeObject:task];
         failure ? failure(error) : nil;
+        _failedAll?_failedAll(error) : nil;
     }];
     
     // 添加sessionTask到数组
@@ -229,11 +275,17 @@ static AFHTTPSessionManager *_sessionManager;
                                  progress:(CDHttpProgress)progress
                                   success:(CDHttpRequestSuccess)success
                                   failure:(CDHttpRequestFailed)failure {
+     URL = [self formatUTF_8Uri:URL];
     NSURLSessionTask *sessionTask = [_sessionManager POST:URL parameters:parameters constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
         
         for (NSUInteger i = 0; i < images.count; i++) {
             // 图片经过等比压缩后得到的二进制文件
-            NSData *imageData = UIImageJPEGRepresentation(images[i], imageScale ?: 1.f);
+            NSData *imageData = NULL;
+            if ([imageType containsString:@"jpg"]) {
+                imageData = UIImageJPEGRepresentation(images[i], imageScale ?: 1.f);
+            }else{
+                 imageData = UIImagePNGRepresentation(images[i]);
+            }
             // 默认图片的文件名, 若fileNames为nil就使用
             
             NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
@@ -257,12 +309,14 @@ static AFHTTPSessionManager *_sessionManager;
         
         [[self allSessionTask] removeObject:task];
         success ? success(responseObject) : nil;
+        _successAll?_successAll(responseObject) : nil;
         
     } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
         CDLog(@"%@",_isOpenLog ? NSStringFormat(@"error = %@",error) : @"CDNetworkHelper已关闭日志打印");
         
         [[self allSessionTask] removeObject:task];
         failure ? failure(error) : nil;
+        _failedAll?_failedAll(error) : nil;
     }];
     
     // 添加sessionTask到数组
@@ -277,6 +331,7 @@ static AFHTTPSessionManager *_sessionManager;
                              progress:(CDHttpProgress)progress
                               success:(void(^)(NSString *))success
                               failure:(CDHttpRequestFailed)failure {
+    URL = [self formatUTF_8Uri:URL];
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:URL]];
     NSURLSessionDownloadTask *downloadTask = [_sessionManager downloadTaskWithRequest:request progress:^(NSProgress * _Nonnull downloadProgress) {
         //下载进度
@@ -344,6 +399,8 @@ static AFHTTPSessionManager *_sessionManager;
     [[AFNetworkReachabilityManager sharedManager] startMonitoring];
     // 打开状态栏的等待菊花
     [AFNetworkActivityIndicatorManager sharedManager].enabled = YES;
+    
+    _isOpenUriUTF_8 = true;
 }
 
 #pragma mark - 重置AFHTTPSessionManager相关属性
@@ -379,7 +436,31 @@ static AFHTTPSessionManager *_sessionManager;
     
     [_sessionManager setSecurityPolicy:securityPolicy];
 }
+#pragma mark - 属性获取
+/**
+ 获得 CDNetworkHelper
+ */
++(CDNetworkHelper*)defaultHelper{
+    if (_defautNetworkHelper == NULL) {
+        _defautNetworkHelper = [[CDNetworkHelper alloc]init];
+    }
+    return _defautNetworkHelper;
+}
+/**
+ 获得 defaultSessionManager
+ */
++(AFHTTPSessionManager*)defaultSessionManager{
+ return _sessionManager;
+}
++(NSString*)formatUTF_8Uri:(NSString*)url{
+    if (_isOpenUriUTF_8) {
+        return   [url stringByAddingPercentEncodingWithAllowedCharacters:
+                  [NSCharacterSet URLQueryAllowedCharacterSet]];
+    }else{
+        return url;
+    }
 
+}
 @end
 
 
