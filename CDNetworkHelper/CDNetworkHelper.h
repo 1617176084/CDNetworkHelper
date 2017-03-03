@@ -33,6 +33,8 @@
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
+#import "AFNetworking.h"
+#import "AFNetworkActivityIndicatorManager.h"
 #import "CDNetworkCache.h"
 
 #ifndef kIsNetwork
@@ -350,6 +352,14 @@ typedef void(^CDNetworkStatus)(CDNetworkStatusType status);
         一个域名。因为SSL证书上的域名是独立的,假如证书上注册的域名是www.google.com, 那么mail.google.com是无法验证通过的.
  */
 + (void)setSecurityPolicyWithCerPath:(NSString *)cerPath validatesDomainName:(BOOL)validatesDomainName;
-
+#pragma mark - 属性获取
+/**
+ 获得 CDNetworkHelper
+ */
++(CDNetworkHelper*)defaultHelper;
+/**
+ 获得 defaultSessionManager
+ */
++(AFHTTPSessionManager*)defaultSessionManager;
 @end
 
