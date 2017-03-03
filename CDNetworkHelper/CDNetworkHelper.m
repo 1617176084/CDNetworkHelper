@@ -8,6 +8,8 @@
 
 
 #import "CDNetworkHelper.h"
+#import "AFNetworking.h"
+#import "AFNetworkActivityIndicatorManager.h"
 
 
 #ifdef DEBUG

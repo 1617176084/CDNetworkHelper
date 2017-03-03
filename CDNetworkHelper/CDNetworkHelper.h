@@ -33,8 +33,7 @@
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
-#import "AFNetworking.h"
-#import "AFNetworkActivityIndicatorManager.h"
+
 #import "CDNetworkCache.h"
 
 #ifndef kIsNetwork
@@ -360,6 +359,6 @@ typedef void(^CDNetworkStatus)(CDNetworkStatusType status);
 /**
  获得 defaultSessionManager
  */
-+(AFHTTPSessionManager*)defaultSessionManager;
++(id)defaultSessionManager;
 @end
 
